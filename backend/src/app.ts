@@ -12,6 +12,6 @@ app.use("/api", routes);
 
 export async function initApp() {
   await connectMongo();
-  // getRedis();
+  getRedis();
   return app;
 }
