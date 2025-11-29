@@ -1,8 +1,10 @@
 import { Router } from "express";
+import flagRoutes from "./routes/flag.routes.js"
 
 const router = Router();
 
-// TODO: will add route modules in Step 3
+router.use("/flags", flagRoutes);
+
 router.get("/health", (req, res) => {
   res.json({ status: "ok" });
 });
