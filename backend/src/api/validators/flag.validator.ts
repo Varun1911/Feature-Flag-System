@@ -31,7 +31,7 @@ const VariantSchema = z.object({
 });
 
 
-const createFlagSchema = z.object({
+export const CreateFlagSchema = z.object({
     key: z.string(),
     description: z.string().optional(),
     variants: z.array(VariantSchema),
