@@ -18,3 +18,21 @@ export const createFlagService = async (data: any) => {
         flag: createdFlag
     };
 };
+
+
+export const getAllFlagsService = async () => {
+    const flags = await FlagModel.find({});
+    return {
+        success: true,
+        count: flags.length,
+        flags
+    };
+};
+
+
+export const getFlagByKeyService = async (key: string) => {
+    const flag = await FlagModel.findOne({ key });
+
+    // controller handles the null case
+    return flag;
+};

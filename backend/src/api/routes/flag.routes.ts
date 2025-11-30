@@ -1,8 +1,17 @@
 import { Router } from "express";
-import { createFlagController } from "../controllers/flag.controller.js";
+import { createFlagController, 
+         getAllFlagsController,
+         getFlagByKeyController
+ } from "../controllers/flag.controller.js";
 
 const router = Router();
 
-router.post("/", createFlagController);
+router.route("/")
+    .post(createFlagController)
+    .get(getAllFlagsController);
+
+
+router.get("/:key", getFlagByKeyController);
+
 
 export default router;
