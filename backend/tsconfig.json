@@ -9,8 +9,5 @@
     "forceConsistentCasingInFileNames": true,
     "outDir": "dist",
     "rootDir": "src"
-  },
-  "ts-node": {
-    "esm": true
   }
 }
