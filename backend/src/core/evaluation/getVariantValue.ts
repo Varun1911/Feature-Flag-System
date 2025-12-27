@@ -1,10 +1,12 @@
-import { FlagVariant } from "../types/flag.js";
+import { FlagVariant, EvaluationResult } from "../types/flag.js";
 
 export const getVariantValue = (
   flag: { variants: FlagVariant[] },
   variantKey?: string
-) => {
-  if (!variantKey) return null;
+): EvaluationResult => {
+  if (!variantKey) {
+      throw new Error("Variant key missing")
+  }
 
   const variant = flag.variants.find(v => v.key === variantKey);
 
@@ -12,5 +14,8 @@ export const getVariantValue = (
     throw new Error(`Variant "${variantKey}" not found in flag`);
   }
 
-  return variant.value;
+  return {
+    variantKey: variant.key,
+    value: variant.value
+  };
 };

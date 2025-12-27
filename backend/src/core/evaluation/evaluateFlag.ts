@@ -1,12 +1,13 @@
 import { evaluateRule } from "./evaluateRule.js";
 import { evaluateRollout } from "./evaluateRollout.js";
 import { getVariantValue } from "./getVariantValue.js";
+import { EvaluationResult } from "../types/flag.js";
 
 export const evaluateFlag = (
   flag: any,
   context: Record<string, any>,
   environment: "dev" | "prod" = "prod"
-) => {
+): EvaluationResult => {
   const env = flag.environments?.[environment];
 
   // 1. Environment missing or disabled

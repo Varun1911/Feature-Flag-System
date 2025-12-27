@@ -24,3 +24,9 @@ export type FlagVariant = {
   key: string;
   value: any;
 };
+
+
+export type EvaluationResult = {
+  variantKey: string;
+  value: any;
+};

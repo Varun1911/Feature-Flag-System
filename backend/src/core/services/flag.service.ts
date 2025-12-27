@@ -44,20 +44,16 @@ export const evaluateFlagService = async (
   context: Record<string, any>,
   environment: "dev" | "prod" = "prod"
 ) => {
-  const flag = await FlagModel.findOne({ key });
+    const flag = await FlagModel.findOne({ key });
 
-  if (!flag) {
-    throw new Error(`Feature flag "${key}" not found`);
-  }
+    if (!flag) {
+        throw new Error(`Feature flag "${key}" not found`);
+    }
 
-  const value = evaluateFlag(flag, context, environment);
+    const result = evaluateFlag(flag, context, environment);
 
-  // Also return which variant was selected
-  const variant = flag.variants.find(v => v.value === value)?.key;
-
-  return {
-    key,
-    value,
-    variant
-  };
+    return {
+        key,
+        ...result
+    };    
 };
