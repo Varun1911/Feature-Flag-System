@@ -1,5 +1,6 @@
 import { CreateFlagSchema } from "../../api/validators/flag.validator.js"
 import { FlagModel } from "../models/flag.model.js";
+import { evaluateFlag } from "../evaluation/evaluateFlag.js";
 
 export const createFlagService = async (data: any) => {
     //validation using zod
@@ -35,4 +36,28 @@ export const getFlagByKeyService = async (key: string) => {
 
     // controller handles the null case
     return flag;
+};
+
+
+export const evaluateFlagService = async (
+  key: string,
+  context: Record<string, any>,
+  environment: "dev" | "prod" = "prod"
+) => {
+  const flag = await FlagModel.findOne({ key });
+
+  if (!flag) {
+    throw new Error(`Feature flag "${key}" not found`);
+  }
+
+  const value = evaluateFlag(flag, context, environment);
+
+  // Also return which variant was selected
+  const variant = flag.variants.find(v => v.value === value)?.key;
+
+  return {
+    key,
+    value,
+    variant
+  };
 };

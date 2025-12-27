@@ -1,7 +1,8 @@
 import { Request, Response } from "express";
 import { createFlagService,
          getAllFlagsService,
-         getFlagByKeyService
+         getFlagByKeyService,
+         evaluateFlagService
  } from "../../core/services/flag.service.js";
 
 export const createFlagController = async (req: Request, res: Response) => {
@@ -40,3 +41,24 @@ export const getFlagByKeyController = async (req: Request, res: Response) => {
 };
 
 
+export const evaluateFlagController = async (req: Request, res: Response) => {
+  try {
+    const { key, environment, context } = req.body;
+
+    if (!key || !context) {
+      return res.status(400).json({
+        error: "key and context are required"
+      });
+    }
+
+    const result = await evaluateFlagService(
+      key,
+      context,
+      environment
+    );
+
+    res.status(200).json(result);
+  } catch (err: any) {
+    res.status(400).json({ error: err.message });
+  }
+};
