@@ -2,8 +2,11 @@ import { Request, Response } from "express";
 import { createFlagService,
          getAllFlagsService,
          getFlagByKeyService,
-         evaluateFlagService
+         evaluateFlagService,
+         updateFlagService,
+         deleteFlagService
  } from "../../core/services/flag.service.js";
+ import { UpdateFlagSchema } from "../validators/flag.update.validator.js";
 
 export const createFlagController = async (req: Request, res: Response) => {
   try {
@@ -11,6 +14,32 @@ export const createFlagController = async (req: Request, res: Response) => {
     res.status(201).json(result);
   } catch (err: any) {
     console.error(err);
+    res.status(400).json({ error: err.message });
+  }
+};
+
+
+export const updateFlagController = async (req: Request, res: Response) => {
+  try {
+    const update = UpdateFlagSchema.parse(req.body);
+
+    const result = await updateFlagService(
+      req.params.key,
+      update
+    );
+
+    res.status(200).json(result);
+  } catch (err: any) {
+    res.status(400).json({ error: err.message });
+  }
+};
+
+
+export const deleteFlagController = async (req: Request, res: Response) => {
+  try {
+    const result = await deleteFlagService(req.params.key);
+    res.status(200).json(result);
+  } catch (err: any) {
     res.status(400).json({ error: err.message });
   }
 };

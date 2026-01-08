@@ -2,6 +2,7 @@ import { CreateFlagSchema } from "../../api/validators/flag.validator.js"
 import { FlagModel } from "../models/flag.model.js";
 import { evaluateFlag } from "../evaluation/evaluateFlag.js";
 import { getRedis } from "../../config/redis.js";
+import { invalidateFlagCache } from "./flag.cache.js";
 
 const FLAG_CACHE_TTL = 60; // seconds
 
@@ -21,6 +22,40 @@ export const createFlagService = async (data: any) => {
         success: true,
         flag: createdFlag
     };
+};
+
+export const updateFlagService = async (
+  key: string,
+  update: Record<string, any>
+) => {
+  const updated = await FlagModel.findOneAndUpdate(
+    { key },
+    update,
+    { new: true }
+  );
+
+  if (!updated) {
+    throw new Error(`Feature flag "${key}" not found`);
+  }
+
+  await invalidateFlagCache(key);
+
+  return {
+    success: true,
+    flag: updated
+  };
+};
+
+export const deleteFlagService = async (key: string) => {
+  const deleted = await FlagModel.findOneAndDelete({ key });
+
+  if (!deleted) {
+    throw new Error(`Feature flag "${key}" not found`);
+  }
+
+  await invalidateFlagCache(key);
+
+  return { success: true };
 };
 
 
@@ -49,8 +84,11 @@ const getFlagByKeyCached = async (key: string) => {
   // 1. Try cache
   const cached = await redis.get(cacheKey);
   if (cached) {
+    console.log("[CACHE HIT]", cacheKey);
     return JSON.parse(cached);
   }
+
+  console.log("[CACHE MISS]", cacheKey);
 
   // 2. Fetch from DB
   const flag = await FlagModel.findOne({ key }).lean();
@@ -65,6 +103,7 @@ const getFlagByKeyCached = async (key: string) => {
 
   return flag;
 };
+
 
 export const evaluateFlagService = async (
   key: string,
