@@ -1,5 +1,5 @@
 {
-  "name": "varun-taneja_feature-flag-sdk",
+  "name": "@varun-taneja/feature-flag-sdk",
   "version": "1.0.0",
   "type": "module",
   "main": "dist/index.js",

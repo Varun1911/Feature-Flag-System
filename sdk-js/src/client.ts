@@ -25,7 +25,6 @@ export class FeatureFlagClient {
 
     const cached = getCache(cacheKey);
     if (cached !== undefined) {
-        console.log("[SDK CACHE HIT]", cacheKey);
       return cached;
     }
 
@@ -38,9 +37,7 @@ export class FeatureFlagClient {
       }
     );
 
-    console.log(`response value: ${response.value}`);
     setCache(cacheKey, response.value);
-    console.log("[SDK CACHE MISS]", cacheKey);
     return response.value;
   }
 }
