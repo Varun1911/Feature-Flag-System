@@ -7,13 +7,17 @@ import { createFlagService,
          deleteFlagService
  } from "../../core/services/flag.service.js";
  import { UpdateFlagSchema } from "../validators/flag.update.validator.js";
+ import { CreateFlagSchema } from "../validators/flag.validator.js";
+
 
 export const createFlagController = async (req: Request, res: Response) => {
   try {
-    const result = await createFlagService(req.body);
+    const parsed = CreateFlagSchema.parse(req.body);
+
+    const result = await createFlagService(parsed);
+
     res.status(201).json(result);
   } catch (err: any) {
-    console.error(err);
     res.status(400).json({ error: err.message });
   }
 };
@@ -21,6 +25,12 @@ export const createFlagController = async (req: Request, res: Response) => {
 
 export const updateFlagController = async (req: Request, res: Response) => {
   try {
+    if ("key" in req.body) {
+      return res.status(400).json({
+        error: "Feature flag key is immutable"
+      });
+    }
+
     const update = UpdateFlagSchema.parse(req.body);
 
     const result = await updateFlagService(

@@ -1,22 +1,23 @@
-import { CreateFlagSchema } from "../../api/validators/flag.validator.js"
 import { FlagModel } from "../models/flag.model.js";
 import { evaluateFlag } from "../evaluation/evaluateFlag.js";
 import { getRedis } from "../../config/redis.js";
 import { invalidateFlagCache } from "./flag.cache.js";
+import {
+  getCachedEvaluation,
+  setCachedEvaluation
+} from "./flag.eval.cache.js";
 
 const FLAG_CACHE_TTL = 60; // seconds
 
 export const createFlagService = async (data: any) => {
-    //validation using zod
-    const parsed = CreateFlagSchema.parse(data);
 
     //checking if already exists
-    const exists = await FlagModel.exists({ key: parsed.key });
+    const exists = await FlagModel.exists({ key: data.key });
     if(exists){
-        throw new Error(`Feature Flag "${parsed.key}" already exists`);
+        throw new Error(`Feature Flag "${data.key}" already exists`);
     }
 
-    const createdFlag = await FlagModel.create(parsed);
+    const createdFlag = await FlagModel.create(data);
 
     return {
         success: true,
@@ -84,11 +85,8 @@ const getFlagByKeyCached = async (key: string) => {
   // 1. Try cache
   const cached = await redis.get(cacheKey);
   if (cached) {
-    console.log("[CACHE HIT]", cacheKey);
     return JSON.parse(cached);
   }
-
-  console.log("[CACHE MISS]", cacheKey);
 
   // 2. Fetch from DB
   const flag = await FlagModel.findOne({ key }).lean();
@@ -110,16 +108,35 @@ export const evaluateFlagService = async (
   context: Record<string, any>,
   environment: "dev" | "prod" = "prod"
 ) => {
-    const flag = await getFlagByKeyCached(key);
+  const userId = context.userId;
 
+  // Only cache if userId exists
+  if (userId) {
+    const cacheKey = `eval:${key}:${environment}:${userId}`;
+
+    const cached = await getCachedEvaluation(cacheKey);
+    if (cached) {
+      return { key, ...cached };
+    }
+
+    const flag = await getFlagByKeyCached(key);
     if (!flag) {
-        throw new Error(`Feature flag "${key}" not found`);
+      throw new Error(`Feature flag "${key}" not found`);
     }
 
     const result = evaluateFlag(flag, context, environment);
 
-    return {
-        key,
-        ...result
-    };    
+    await setCachedEvaluation(cacheKey, result);
+
+    return { key, ...result };
+  }
+
+  // No userId → no evaluation cache
+  const flag = await getFlagByKeyCached(key);
+  if (!flag) {
+    throw new Error(`Feature flag "${key}" not found`);
+  }
+
+  const result = evaluateFlag(flag, context, environment);
+  return { key, ...result };
 };
