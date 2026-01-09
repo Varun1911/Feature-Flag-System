@@ -6,7 +6,7 @@ import { createFlagService,
          updateFlagService,
          deleteFlagService
  } from "../../core/services/flag.service.js";
- import { UpdateFlagSchema } from "../validators/flag.update.validator.js";
+ import { PatchFlagSchema } from "../validators/flag.patch.validator.js";
  import { CreateFlagSchema } from "../validators/flag.validator.js";
 
 
@@ -31,7 +31,7 @@ export const updateFlagController = async (req: Request, res: Response) => {
       });
     }
 
-    const update = UpdateFlagSchema.parse(req.body);
+    const update = PatchFlagSchema.parse(req.body);
 
     const result = await updateFlagService(
       req.params.key,
