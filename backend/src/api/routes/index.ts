@@ -8,7 +8,6 @@ router.get("/health", (req, res) => {
   res.json({ status: "ok" });
 });
 
-
 router.use(auditRoutes);
 
 router.use("/flags", flagRoutes);

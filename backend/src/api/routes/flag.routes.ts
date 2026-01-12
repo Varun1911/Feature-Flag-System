@@ -5,7 +5,8 @@ import {
   getFlagByKeyController,
   updateFlagController,
   deleteFlagController,
-  evaluateFlagController
+  evaluateFlagController,
+  rollbackFlagController
 } from "../controllers/flag.controller.js";
 
 const router = Router();
@@ -14,6 +15,8 @@ router.post("/", createFlagController);
 router.get("/", getAllFlagsController);
 
 router.post("/evaluate", evaluateFlagController);
+
+router.post("/:key/rollback/:version", rollbackFlagController);
 
 router.route("/:key")
   .get(getFlagByKeyController)

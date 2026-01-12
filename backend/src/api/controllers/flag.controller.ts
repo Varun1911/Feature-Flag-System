@@ -8,6 +8,7 @@ import { createFlagService,
  } from "../../core/services/flag.service.js";
  import { PatchFlagSchema } from "../validators/flag.patch.validator.js";
  import { CreateFlagSchema } from "../validators/flag.validator.js";
+ import { rollbackFlagService } from "../../core/services/flag.service.js";
 
 
 export const createFlagController = async (req: Request, res: Response) => {
@@ -103,6 +104,24 @@ export const evaluateFlagController = async (req: Request, res: Response) => {
     );
 
     res.status(200).json(result);
+  } catch (err: any) {
+    res.status(400).json({ error: err.message });
+  }
+};
+
+
+export const rollbackFlagController = async (req: Request, res: Response) => {
+  try {
+    const userHeader = req.headers["x-user"];
+    const user = typeof userHeader === "string" ? userHeader : "system";
+
+    const restored = await rollbackFlagService(
+      req.params.key,
+      Number(req.params.version),
+      user
+    );
+
+    res.json(restored);
   } catch (err: any) {
     res.status(400).json({ error: err.message });
   }
