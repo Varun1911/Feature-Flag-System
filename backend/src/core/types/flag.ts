@@ -34,4 +34,19 @@ export type EvaluationResult = {
 
 export type FlagKey = string;
 
-export type UpdateFlagInput = Record<string, any>; 
+export type UpdateFlagInput = {
+  description?: string;
+  tags?: string[];
+  environments?: {
+    dev?: {
+      isEnabled?: boolean;
+      defaultVariant?: string;
+      rules?: any[];
+    };
+    prod?: {
+      isEnabled?: boolean;
+      defaultVariant?: string;
+      rules?: any[];
+    };
+  };
+};

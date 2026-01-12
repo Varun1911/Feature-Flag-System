@@ -9,6 +9,7 @@ import {
 import { AuditLogModel } from "../models/auditlog.model.js";
 import type { UpdateFlagInput } from "../types/flag.js";
 import { FlagVersionModel } from "../models/flagVersion.model.js";
+import deepmerge from "deepmerge";
 
 
 const FLAG_CACHE_TTL = 60; // seconds
@@ -41,39 +42,42 @@ export const createFlagService = async (data: any, user: string) => {
 
 export const updateFlagService = async (
   key: string,
-  update: Record<string, any>,
+  update: UpdateFlagInput,
   user: string
 ) => {
-  // 1. Get current flag
-  const before = await FlagModel.findOne({ key }).lean();
-  if (!before) {
+  const rawBefore = await FlagModel.findOne({ key }).lean();
+  if (!rawBefore) {
     throw new Error(`Feature flag "${key}" not found`);
   }
 
-  // 2. Update flag
+  const cleanBefore = stripMongoIds(rawBefore);
+
+  // 1) Deep merge patch into current flag
+  const merged = deepmerge(cleanBefore, update, {
+    arrayMerge: (_, source) => source // replace arrays instead of concat
+  });
+
+  // 2) Save merged flag
   const after = await FlagModel.findOneAndUpdate(
     { key },
-    update,
+    merged,
     { new: true }
   ).lean();
 
   if (!after) {
-    throw new Error(`Feature flag "${key}" not found`);
+    throw new Error("Failed to update feature flag");
   }
 
-  // 3. Invalidate Redis cache
   await invalidateFlagCache(key);
 
-  // 4. Create audit log
   await AuditLogModel.create({
     flagKey: key,
     action: "UPDATE",
-    before,
+    before: rawBefore,
     after,
     changedBy: user
   });
 
-  // 5. Create new version
   const latest = await FlagVersionModel
     .findOne({ flagKey: key })
     .sort({ version: -1 });
@@ -87,18 +91,34 @@ export const updateFlagService = async (
     createdBy: user
   });
 
-  return {
-    success: true,
-    flag: after
-  };
+  return { success: true, flag: after };
 };
 
+
 export const deleteFlagService = async (key: string, user: string) => {
-  const before = await FlagModel.findOneAndDelete({ key }).lean();
+  const before = await FlagModel.findOne({ key }).lean();
 
   if (!before) {
     throw new Error(`Feature flag "${key}" not found`);
   }
+
+  if (!before.environments?.dev || !before.environments?.prod) {
+    throw new Error("Flag is missing environment configuration");
+  }
+
+  const disabled = {
+    ...before,
+    environments: {
+      dev: { ...before.environments.dev, isEnabled: false },
+      prod: { ...before.environments.prod, isEnabled: false }
+    }
+  };
+
+  const after = await FlagModel.findOneAndUpdate(
+    { key },
+    { environments: disabled.environments },
+    { new: true }
+  ).lean();
 
   await invalidateFlagCache(key);
 
@@ -106,7 +126,21 @@ export const deleteFlagService = async (key: string, user: string) => {
     flagKey: key,
     action: "DELETE",
     before,
+    after,
     changedBy: user
+  });
+
+  const latest = await FlagVersionModel
+    .findOne({ flagKey: key })
+    .sort({ version: -1 });
+
+  const nextVersion = latest ? latest.version + 1 : 1;
+
+  await FlagVersionModel.create({
+    flagKey: key,
+    version: nextVersion,
+    data: after,
+    createdBy: user
   });
 
   return { success: true };
@@ -209,8 +243,11 @@ export const rollbackFlagService = async (
   }
 
   const before = await FlagModel.findOne({ key }).lean();
+  if (!before) {
+    throw new Error(`Feature flag "${key}" not found`);
+  }
 
-  const restored = await FlagModel.findOneAndUpdate(
+  const after = await FlagModel.findOneAndUpdate(
     { key },
     snapshot.data,
     { new: true }
@@ -222,9 +259,37 @@ export const rollbackFlagService = async (
     flagKey: key,
     action: "ROLLBACK",
     before,
-    after: restored,
+    after,
     changedBy: user
   });
 
-  return restored;
+  const latest = await FlagVersionModel
+    .findOne({ flagKey: key })
+    .sort({ version: -1 });
+
+  const nextVersion = latest ? latest.version + 1 : 1;
+
+  await FlagVersionModel.create({
+    flagKey: key,
+    version: nextVersion,
+    data: after,
+    createdBy: user
+  });
+
+  return after;
+};
+
+
+//helper
+const stripMongoIds = (obj: any): any => {
+  if (Array.isArray(obj)) {
+    return obj.map(stripMongoIds);
+  }
+  if (obj && typeof obj === "object") {
+    const { _id, __v, ...rest } = obj;
+    return Object.fromEntries(
+      Object.entries(rest).map(([k, v]) => [k, stripMongoIds(v)])
+    );
+  }
+  return obj;
 };

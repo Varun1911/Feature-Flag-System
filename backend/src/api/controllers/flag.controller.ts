@@ -9,6 +9,7 @@ import { createFlagService,
  import { PatchFlagSchema } from "../validators/flag.patch.validator.js";
  import { CreateFlagSchema } from "../validators/flag.validator.js";
  import { rollbackFlagService } from "../../core/services/flag.service.js";
+import { UpdateFlagInput } from "../../core/types/flag.js";
 
 
 export const createFlagController = async (req: Request, res: Response) => {
@@ -34,7 +35,7 @@ export const updateFlagController = async (req: Request, res: Response) => {
       });
     }
 
-    const update = PatchFlagSchema.parse(req.body);
+    const update: UpdateFlagInput = PatchFlagSchema.parse(req.body);
 
     const userHeader = req.headers["x-user"];
     const user = typeof userHeader === "string" ? userHeader : "system";    
