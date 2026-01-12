@@ -6,55 +6,77 @@ import {
   getCachedEvaluation,
   setCachedEvaluation
 } from "./flag.eval.cache.js";
+import { AuditLogModel } from "../models/auditlog.model.js";
+import type { UpdateFlagInput } from "../types/flag.js";
 
 const FLAG_CACHE_TTL = 60; // seconds
 
-export const createFlagService = async (data: any) => {
+export const createFlagService = async (data: any, user: string) => {
+  const exists = await FlagModel.exists({ key: data.key });
+  if (exists) {
+    throw new Error(`Feature Flag ${data.key} already exists`);
+  }
 
-    //checking if already exists
-    const exists = await FlagModel.exists({ key: data.key });
-    if(exists){
-        throw new Error(`Feature Flag "${data.key}" already exists`);
-    }
+  const created = await FlagModel.create(data);
 
-    const createdFlag = await FlagModel.create(data);
+  await AuditLogModel.create({
+    flagKey: data.key,
+    action: "CREATE",
+    after: created,
+    changedBy: user
+  });
 
-    return {
-        success: true,
-        flag: createdFlag
-    };
+  return { success: true, flag: created };
 };
 
 export const updateFlagService = async (
   key: string,
-  update: Record<string, any>
+  update: UpdateFlagInput,
+  user: string
 ) => {
-  const updated = await FlagModel.findOneAndUpdate(
+  const before = await FlagModel.findOne({ key }).lean();
+
+  if (!before) {
+    throw new Error(`Feature flag "${key}" not found`);
+  }
+
+  const after = await FlagModel.findOneAndUpdate(
     { key },
     update,
     { new: true }
-  );
-
-  if (!updated) {
-    throw new Error(`Feature flag "${key}" not found`);
-  }
+  ).lean();
 
   await invalidateFlagCache(key);
+
+  await AuditLogModel.create({
+    flagKey: key,
+    action: "UPDATE",
+    before,
+    after,
+    changedBy: user
+  });
 
   return {
     success: true,
-    flag: updated
+    flag: after
   };
 };
 
-export const deleteFlagService = async (key: string) => {
-  const deleted = await FlagModel.findOneAndDelete({ key });
+export const deleteFlagService = async (key: string, user: string) => {
+  const before = await FlagModel.findOneAndDelete({ key }).lean();
 
-  if (!deleted) {
+  if (!before) {
     throw new Error(`Feature flag "${key}" not found`);
   }
 
   await invalidateFlagCache(key);
+
+  await AuditLogModel.create({
+    flagKey: key,
+    action: "DELETE",
+    before,
+    changedBy: user
+  });
 
   return { success: true };
 };

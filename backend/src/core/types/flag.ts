@@ -30,3 +30,8 @@ export type EvaluationResult = {
   variantKey: string;
   value: any;
 };
+
+
+export type FlagKey = string;
+
+export type UpdateFlagInput = Record<string, any>; 

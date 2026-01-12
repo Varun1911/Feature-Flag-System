@@ -13,8 +13,10 @@ import { createFlagService,
 export const createFlagController = async (req: Request, res: Response) => {
   try {
     const parsed = CreateFlagSchema.parse(req.body);
+    const userHeader = req.headers["x-user"];
+    const user = typeof userHeader === "string" ? userHeader : "system";
 
-    const result = await createFlagService(parsed);
+    const result = await createFlagService(parsed, user);
 
     res.status(201).json(result);
   } catch (err: any) {
@@ -33,10 +35,10 @@ export const updateFlagController = async (req: Request, res: Response) => {
 
     const update = PatchFlagSchema.parse(req.body);
 
-    const result = await updateFlagService(
-      req.params.key,
-      update
-    );
+    const userHeader = req.headers["x-user"];
+    const user = typeof userHeader === "string" ? userHeader : "system";    
+    
+    const result = await updateFlagService(req.params.key, update, user);
 
     res.status(200).json(result);
   } catch (err: any) {
@@ -47,7 +49,11 @@ export const updateFlagController = async (req: Request, res: Response) => {
 
 export const deleteFlagController = async (req: Request, res: Response) => {
   try {
-    const result = await deleteFlagService(req.params.key);
+
+    const userHeader = req.headers["x-user"];
+    const user = typeof userHeader === "string" ? userHeader : "system";
+
+  const result = await deleteFlagService(req.params.key, user);
     res.status(200).json(result);
   } catch (err: any) {
     res.status(400).json({ error: err.message });
