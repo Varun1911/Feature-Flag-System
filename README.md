@@ -102,7 +102,7 @@ This provides full traceability and safe production usage.
 
 The complete REST API is documented on Postman:
 
-https://documenter.getpostman.com/view/46274146/2sBXVfkCRY
+[Api Docs Link](https://documenter.getpostman.com/view/46274146/2sBXVfkCRY)
 
 It includes:
 - Flag management (create, update, rollback, disable)
