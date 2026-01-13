@@ -10,8 +10,6 @@ const AuditLogSchema = new mongoose.Schema(
       required: true
     },
 
-    environment: { type: String }, // "dev" | "prod" or null
-
     before: { type: mongoose.Schema.Types.Mixed },
     after: { type: mongoose.Schema.Types.Mixed },
 

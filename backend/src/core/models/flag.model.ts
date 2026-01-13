@@ -45,8 +45,6 @@ const FlagSchema = new mongoose.Schema(
     },
 
     tags: [String],
-    createdBy: { type: String },
-    updatedBy: { type: String }
   },
   { timestamps: true }
 );

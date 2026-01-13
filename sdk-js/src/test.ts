@@ -8,6 +8,6 @@ const sdk = new FeatureFlagClient({
 });
 
 setInterval(async () => {
-  const value = await sdk.getFlag<boolean>("checkout_v3");
+  const value = await sdk.getFlag<boolean>("checkout_v4");
   console.log(new Date().toISOString(), value);
 }, 3000);
